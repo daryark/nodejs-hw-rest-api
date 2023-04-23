@@ -21,9 +21,8 @@ const addContact = async ({ name, email, phone }) => {
 		(contact) =>
 			contact.name.toLowerCase() === name.toLowerCase() ||
 			contact.email === email ||
-			contact.phone.trim().split("-").join("") === phone.trim().split("-").join("")
+			contact.phone === phone
 	);
-
 	if (existingContact) return null;
 
 	const newContact = { id: v4(), name, email, phone };

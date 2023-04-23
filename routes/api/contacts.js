@@ -1,5 +1,6 @@
 const express = require("express");
 const { NotFound, BadRequest, Conflict } = require("http-errors");
+const { contactSchema } = require("../../schemas/schema");
 
 const router = express.Router();
 const contactsOperations = require("../../models/contacts");
@@ -24,9 +25,14 @@ router.get("/:id", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
 	try {
+		const { error } = contactSchema.validate(req.body);
+		if (error) throw new BadRequest(error.message);
+
 		const result = await contactsOperations.addContact(req.body);
 		if (!result) {
-			throw new Conflict("this person is already in your contacts");
+			throw new Conflict(
+				"this person is already in your contacts. (name, email or/and phone duplicates)"
+			);
 		}
 		res.status(201).json(result);
 	} catch (error) {
@@ -49,14 +55,17 @@ router.delete("/:id", async (req, res, next) => {
 });
 
 router.put("/:id", async (req, res, next) => {
-	const { id } = req.params;
-	const { name, email, phone } = req.body;
-	if (!name || !email || !phone) {
-		throw new BadRequest("missing fields");
-	}
-	const result = await contactsOperations.updateContact(id, req.body);
+	try {
+		const { error } = contactSchema.validate(req.body);
+		if (error) throw new BadRequest(error.message);
 
-	res.json(result);
+		const { id } = req.params;
+		const result = await contactsOperations.updateContact(id, req.body);
+
+		res.json(result);
+	} catch (error) {
+		next(error);
+	}
 });
 
 module.exports = router;
