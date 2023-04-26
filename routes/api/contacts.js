@@ -17,6 +17,8 @@ router.get("/", async (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
 	try {
 		const result = await contactsOperations.getContactById(req.params.id);
+		if (!result) throw new NotFound();
+
 		res.json(result);
 	} catch (error) {
 		next(error);
@@ -62,7 +64,7 @@ router.put("/:id", async (req, res, next) => {
 		const { id } = req.params;
 		const result = await contactsOperations.updateContact(id, req.body);
 
-		res.json(result);
+		res.json({ result, message: "contact deleted" });
 	} catch (error) {
 		next(error);
 	}
