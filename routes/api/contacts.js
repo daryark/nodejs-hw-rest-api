@@ -1,25 +1,73 @@
-const express = require('express')
+const express = require("express");
+const { NotFound, BadRequest, Conflict } = require("http-errors");
+const { contactSchema } = require("../../schemas/schema");
 
-const router = express.Router()
+const router = express.Router();
+const contactsOperations = require("../../models/contacts");
 
-router.get('/', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+router.get("/", async (req, res, next) => {
+	try {
+		const result = await contactsOperations.listContacts();
+		res.json(result);
+	} catch (error) {
+		next(error);
+	}
+});
 
-router.get('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+router.get("/:id", async (req, res, next) => {
+	try {
+		const result = await contactsOperations.getContactById(req.params.id);
+		if (!result) throw new NotFound();
 
-router.post('/', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+		res.json(result);
+	} catch (error) {
+		next(error);
+	}
+});
 
-router.delete('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+router.post("/", async (req, res, next) => {
+	try {
+		const { error } = contactSchema.validate(req.body);
+		if (error) throw new BadRequest(error.message);
 
-router.put('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+		const result = await contactsOperations.addContact(req.body);
+		if (!result) {
+			throw new Conflict(
+				"this person is already in your contacts. (name, email or/and phone duplicates)"
+			);
+		}
+		res.status(201).json(result);
+	} catch (error) {
+		next(error);
+	}
+});
 
-module.exports = router
+router.delete("/:id", async (req, res, next) => {
+	try {
+		const { id } = req.params;
+		const result = await contactsOperations.removeContact(id);
+
+		if (!result) {
+			throw new NotFound(`Contact with id: ${id} not found`);
+		}
+		res.json(result);
+	} catch (error) {
+		next(error);
+	}
+});
+
+router.put("/:id", async (req, res, next) => {
+	try {
+		const { error } = contactSchema.validate(req.body);
+		if (error) throw new BadRequest(error.message);
+
+		const { id } = req.params;
+		const result = await contactsOperations.updateContact(id, req.body);
+
+		res.json({ result, message: "contact deleted" });
+	} catch (error) {
+		next(error);
+	}
+});
+
+module.exports = router;
